@@ -1,7 +1,7 @@
 # Ubiqo Architecture — Technical Design v0.1
 
 **Date:** 2026-07-13
-**Status:** Design proposal (follows from [`docs/research/omni-gap-analysis.md`](../research/omni-gap-analysis.md))
+**Status:** Design baseline — amended by the [productization review](../reviews/2026-07-13-productization-review.md) and [ADRs 0001–0008](../adr/), which supersede this document where they conflict (notably: exec-git not go-git, device tokens before the OAuth AS, hand-rolled RBAC not Casbin, the P0 recut, and mem0 deferred to P2). Follows from [`docs/research/omni-gap-analysis.md`](../research/omni-gap-analysis.md).
 **Goal:** a free, self-hostable **context fabric** that centralizes memories, projects, skills, instructions, and artifacts across multiple Claude (or other AI-provider) accounts and machines — org → project → user hierarchy, RBAC, semantic versioning, and instruction-driven collaboration — while the AI clients people already use remain the interface.
 
 ---
