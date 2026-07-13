@@ -1,0 +1,59 @@
+# ubiqo — default self-host stack: Postgres + ubiqo. TLS via the `caddy`
+# profile (or bring your own reverse proxy; see docs/runbooks/deploy.md).
+# Resource floor: ~1 vCPU / 1 GiB for the core pair.
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ubiqo
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set in .env}
+      POSTGRES_DB: ubiqo
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ubiqo -d ubiqo"]
+      interval: 10s
+      timeout: 3s
+      retries: 10
+
+  ubiqo:
+    image: ${UBIQO_IMAGE:-ghcr.io/jongodb/ubiqo:latest}
+    build: ..
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      UBIQO_DATABASE_URL: postgres://ubiqo:${POSTGRES_PASSWORD}@postgres:5432/ubiqo?sslmode=disable
+      UBIQO_DATA_DIR: /var/lib/ubiqo
+      UBIQO_PUBLIC_URL: ${UBIQO_PUBLIC_URL:?set in .env}
+      UBIQO_LOG_LEVEL: ${UBIQO_LOG_LEVEL:-info}
+    volumes:
+      - ubiqodata:/var/lib/ubiqo
+    ports:
+      - "127.0.0.1:8383:8383"
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:8383/readyz"]
+      interval: 30s
+      timeout: 3s
+      retries: 5
+
+  caddy:
+    image: caddy:2-alpine
+    profiles: ["caddy"]
+    restart: unless-stopped
+    depends_on: [ubiqo]
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      UBIQO_DOMAIN: ${UBIQO_DOMAIN:-}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddydata:/data
+
+volumes:
+  pgdata:
+  ubiqodata:
+  caddydata:

@@ -1,0 +1,6 @@
+{
+  "name": "ubiqo",
+  "version": "0.1.0",
+  "description": "ubiqo context fabric: injects shared org/project context, memories, and team activity at session start; reports session activity at session end. Requires the ubiqo CLI (`ubiqo login`, `ubiqo init`).",
+  "author": { "name": "ubiqo" }
+}

@@ -1,0 +1,24 @@
+# ubiqo
+
+> Self-hosted context fabric for AI clients: org → project hierarchy, git-backed
+> semver'd shared artifacts, scoped memories, activity digests, and compiled
+> per-project instructions, distributed into Claude Code / Claude Desktop / any
+> MCP client via 12 ubiqo_* tools plus fail-open session hooks. Apache-2.0.
+
+## Docs
+- [README](README.md): quickstart, demo script, security posture, comparison
+- [Architecture](docs/architecture/ubiqo-architecture.md): five-plane design, data model, day-in-the-life
+- [ADRs](docs/adr/): the eight load-bearing decisions (exec-git, device tokens, RBAC, framing…)
+- [Productization review](docs/reviews/2026-07-13-productization-review.md): 8-perspective review synthesis and phase plan
+- [Research](docs/research/omni-gap-analysis.md): why Omni/Basic Memory/mem0 don't fill this niche
+- [Restore runbook](docs/runbooks/restore.md): backup/restore/fsck, failure-mode matrix
+
+## Source map
+- cmd/ubiqo: single binary — serve, migrate, setup, seed, admin, backup, fsck, login/init/hooks
+- internal/core: service façade (RBAC gate, git-first mutations, framing)
+- internal/mcpserver: the MCP tool surface (deny-by-default registry)
+- internal/gitstore: exec-git artifact plane (bare repos, merges, release tags)
+- internal/compiler: context bundle compiler (golden-tested)
+- internal/store: Postgres control plane (+ embedded migrations)
+- internal/httpapi: /mcp, /healthz, /readyz, /metrics, /v1/meta, hook REST
+- clients/claude-plugin: Claude Code plugin (marketplace at repo root)

@@ -1,0 +1,49 @@
+name: ci
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: ubiqo
+          POSTGRES_PASSWORD: ubiqo
+          POSTGRES_DB: ubiqo_test
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U ubiqo -d ubiqo_test"
+          --health-interval 5s --health-timeout 3s --health-retries 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+      - name: vet
+        run: go vet ./...
+      - name: test (unit + integration + e2e, race)
+        env:
+          UBIQO_TEST_DATABASE_URL: postgres://ubiqo:ubiqo@localhost:5432/ubiqo_test?sslmode=disable
+        run: go test ./... -race -count=1
+      - name: goldens are current
+        run: |
+          go test ./internal/compiler -update -count=1
+          git diff --exit-code -- internal/compiler/testdata
+
+  docker:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: build image
+        run: docker build -t ubiqo:ci .
+      - name: smoke (binary runs, migrations apply against throwaway PG)
+        run: |
+          docker network create smokenet
+          docker run -d --name pg --network smokenet -e POSTGRES_USER=ubiqo -e POSTGRES_PASSWORD=u -e POSTGRES_DB=ubiqo postgres:16-alpine
+          for i in $(seq 1 30); do docker exec pg pg_isready -U ubiqo -d ubiqo && break || sleep 1; done
+          docker run --rm --network smokenet -e UBIQO_DATABASE_URL='postgres://ubiqo:u@pg:5432/ubiqo?sslmode=disable' ubiqo:ci migrate
+          docker run --rm ubiqo:ci version

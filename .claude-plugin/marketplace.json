@@ -1,0 +1,11 @@
+{
+  "name": "ubiqo",
+  "owner": { "name": "ubiqo" },
+  "plugins": [
+    {
+      "name": "ubiqo",
+      "source": "./clients/claude-plugin/ubiqo",
+      "description": "Bind this machine's Claude Code to your team's ubiqo context fabric: session-start context injection, session-end activity reporting."
+    }
+  ]
+}

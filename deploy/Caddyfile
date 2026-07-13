@@ -1,0 +1,8 @@
+# TLS termination for ubiqo. Requirements for ANY reverse proxy in front of
+# ubiqo (DevOps review): pass /mcp and /v1/* through unbuffered (SSE), keep
+# idle timeouts long, and forward X-Forwarded-* honestly.
+{$UBIQO_DOMAIN} {
+	reverse_proxy ubiqo:8383 {
+		flush_interval -1
+	}
+}
