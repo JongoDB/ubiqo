@@ -16,6 +16,10 @@ Two problems it kills on day one:
 
 Apache-2.0 · single Go binary · PostgreSQL + git under the hood · [architecture](docs/architecture/ubiqo-architecture.md) · [ADRs](docs/adr/) · [why not Omni/Basic Memory/mem0](docs/research/omni-gap-analysis.md)
 
+> **Fastest full demo:** [`demo/`](demo/README.md) spins up the fabric plus two
+> throwaway "workstations" with Docker — sign into a different claude.ai
+> account in each and run the scripted 15-minute walkthrough.
+
 ## 15-minute quickstart (local eval, no TLS)
 
 Prereqs: Go 1.24+ (or Docker), PostgreSQL, git ≥ 2.38.

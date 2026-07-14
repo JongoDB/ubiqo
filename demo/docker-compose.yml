@@ -1,0 +1,74 @@
+# Two-account demo: postgres + ubiqo + two throwaway "workstations".
+# Each workstation is a clean machine with claude-code and the ubiqo CLI —
+# sign into a DIFFERENT claude.ai account in each. See demo/README.md.
+#
+#   docker compose -f demo/docker-compose.yml up -d --build
+#   docker compose -f demo/docker-compose.yml logs seed   # ← the two tokens
+#
+# Bearer tokens travel over plain HTTP here, which is fine INSIDE this
+# private compose network (or a tailnet) — put Caddy/TLS in front before
+# crossing any real network (deploy/).
+name: ubiqo-demo
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: ubiqo
+      POSTGRES_PASSWORD: demo
+      POSTGRES_DB: ubiqo
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ubiqo -d ubiqo"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  ubiqo:
+    build:
+      context: ..
+      dockerfile: Dockerfile
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      UBIQO_DATABASE_URL: postgres://ubiqo:demo@postgres:5432/ubiqo?sslmode=disable
+      UBIQO_PUBLIC_URL: http://ubiqo:8383
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:8383/readyz"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  # One-shot: loads the "acme" fixture and PRINTS BOTH DEVICE TOKENS.
+  seed:
+    build:
+      context: ..
+      dockerfile: Dockerfile
+    depends_on:
+      ubiqo:
+        condition: service_healthy
+    restart: "no"
+    environment:
+      UBIQO_DATABASE_URL: postgres://ubiqo:demo@postgres:5432/ubiqo?sslmode=disable
+    entrypoint: ["/bin/sh", "-c"]
+    command: ["ubiqo seed || echo 'seed: already loaded (tokens are in the FIRST run of this service)'"]
+
+  workstation-a:
+    build:
+      context: ..
+      dockerfile: demo/workstation.Dockerfile
+    depends_on:
+      ubiqo:
+        condition: service_healthy
+    hostname: laptop-a
+    command: ["sleep", "infinity"]
+
+  workstation-b:
+    build:
+      context: ..
+      dockerfile: demo/workstation.Dockerfile
+    depends_on:
+      ubiqo:
+        condition: service_healthy
+    hostname: laptop-b
+    command: ["sleep", "infinity"]
