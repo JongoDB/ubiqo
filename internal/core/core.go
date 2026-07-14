@@ -56,7 +56,7 @@ func (s *Service) projectCtx(ctx context.Context, a *Actor, slug string) (*store
 	p, err := s.DB.GetProject(ctx, a.OrgID, slug)
 	if err != nil {
 		if errors.Is(err, store.ErrNotFound) {
-			return nil, authz.RoleNone, fmt.Errorf("project %q not found in org %q", slug, a.OrgSlug)
+			return nil, authz.RoleNone, fmt.Errorf("project %q %w in org %q — ubiqo_whoami lists your projects", slug, store.ErrNotFound, a.OrgSlug)
 		}
 		return nil, authz.RoleNone, err
 	}

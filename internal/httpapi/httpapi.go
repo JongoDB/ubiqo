@@ -19,6 +19,7 @@ import (
 	"github.com/prometheus/client_golang/prometheus/promauto"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 
+	"github.com/jongodb/ubiqo/internal/authz"
 	"github.com/jongodb/ubiqo/internal/core"
 	"github.com/jongodb/ubiqo/internal/mcpserver"
 	"github.com/jongodb/ubiqo/internal/store"
@@ -130,7 +131,7 @@ func (s *Server) handleContext(w http.ResponseWriter, r *http.Request) {
 	}
 	bundle, err := s.Svc.GetContext(r.Context(), actor, project, r.URL.Query().Get("section"))
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusForbidden)
+		writeCoreError(w, err)
 		return
 	}
 	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
@@ -157,10 +158,27 @@ func (s *Server) handleSessionEnd(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if err := s.Svc.RecordSessionEnd(r.Context(), actor, in.Project, in.Summary); err != nil {
-		http.Error(w, err.Error(), http.StatusForbidden)
+		writeCoreError(w, err)
 		return
 	}
 	w.WriteHeader(http.StatusAccepted)
+}
+
+// writeCoreError maps service errors to transport codes: structured denials
+// are 403 with the JSON body agents learn from, unknown projects 404, and
+// everything else 500 — internal failures must not masquerade as authz.
+func writeCoreError(w http.ResponseWriter, err error) {
+	var denial *authz.Denial
+	switch {
+	case errors.As(err, &denial):
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusForbidden)
+		_ = json.NewEncoder(w).Encode(denial)
+	case errors.Is(err, store.ErrNotFound):
+		http.Error(w, err.Error(), http.StatusNotFound)
+	default:
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
 }
 
 // instrument wraps everything with structured request logs + metrics.

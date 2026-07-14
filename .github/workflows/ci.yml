@@ -47,3 +47,17 @@ jobs:
           for i in $(seq 1 30); do docker exec pg pg_isready -U ubiqo -d ubiqo && break || sleep 1; done
           docker run --rm --network smokenet -e UBIQO_DATABASE_URL='postgres://ubiqo:u@pg:5432/ubiqo?sslmode=disable' ubiqo:ci migrate
           docker run --rm ubiqo:ci version
+      - name: demo compose smoke (seed writes into the volume the server reads)
+        run: |
+          docker compose -f demo/docker-compose.yml up -d --build --wait ubiqo
+          OUT=$(docker compose -f demo/docker-compose.yml run --rm seed)
+          echo "$OUT"
+          TOKEN=$(echo "$OUT" | grep -oE 'ubq_[0-9a-f]+' | head -1)
+          test -n "$TOKEN"
+          docker compose -f demo/docker-compose.yml exec -T ubiqo \
+            wget -qO- --header "Authorization: Bearer $TOKEN" \
+            'http://127.0.0.1:8383/v1/context?project=website-redesign' | tee /tmp/ctx.txt
+          grep -q 'You are ubiqo user `jon`' /tmp/ctx.txt
+          grep -q 'api-design' /tmp/ctx.txt
+          grep -q 'brand-kit' /tmp/ctx.txt
+          docker compose -f demo/docker-compose.yml down -v

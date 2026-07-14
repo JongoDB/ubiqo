@@ -35,8 +35,13 @@ cat > /root/.claude/settings.json <<'JSON'
 }
 JSON
 
+echo "── verify: pull the compiled context once (fails loudly if the fabric is broken)"
+CTX="$(ubiqo context pull --project "$PROJECT")"
+printf '%s\n' "$CTX" | sed -n '1p'
+WHO="$(printf '%s\n' "$CTX" | sed -n 's/^You are ubiqo user `\([^`]*\)`.*/\1/p' | sed -n '1p')"
+
 echo
-echo "attached to $SERVER as: $(ubiqo context pull --project "$PROJECT" 2>/dev/null | sed -n 's/^You are ubiqo user \`\([a-z0-9-]*\)\`.*/\1/p' | head -1)"
+echo "attached to $SERVER as: ${WHO:-unknown}"
 echo
 echo "next:  claude        (sign in — use a DIFFERENT claude.ai account per workstation)"
 echo "then ask:  \"What happened in $PROJECT while I was away?\""

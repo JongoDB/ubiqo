@@ -33,6 +33,8 @@ services:
     environment:
       UBIQO_DATABASE_URL: postgres://ubiqo:demo@postgres:5432/ubiqo?sslmode=disable
       UBIQO_PUBLIC_URL: http://ubiqo:8383
+    volumes:
+      - ubiqo-data:/var/lib/ubiqo
     healthcheck:
       test: ["CMD", "wget", "-qO-", "http://127.0.0.1:8383/readyz"]
       interval: 5s
@@ -40,6 +42,8 @@ services:
       retries: 20
 
   # One-shot: loads the "acme" fixture and PRINTS BOTH DEVICE TOKENS.
+  # Seed shares the server's data volume: it writes the demo git repos
+  # directly into the artifact plane the server reads (same UBIQO_DATA_DIR).
   seed:
     build:
       context: ..
@@ -50,6 +54,8 @@ services:
     restart: "no"
     environment:
       UBIQO_DATABASE_URL: postgres://ubiqo:demo@postgres:5432/ubiqo?sslmode=disable
+    volumes:
+      - ubiqo-data:/var/lib/ubiqo
     entrypoint: ["/bin/sh", "-c"]
     command: ["ubiqo seed || echo 'seed: already loaded (tokens are in the FIRST run of this service)'"]
 
@@ -72,3 +78,6 @@ services:
         condition: service_healthy
     hostname: laptop-b
     command: ["sleep", "infinity"]
+
+volumes:
+  ubiqo-data:
