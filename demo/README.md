@@ -27,6 +27,7 @@ Terminal A:
 ```sh
 docker compose -f demo/docker-compose.yml exec workstation-a bash
 attach.sh <jon-token>
+cd /root/work/website-redesign
 claude          # sign in with claude.ai ACCOUNT A (URL + paste-code flow)
 ```
 

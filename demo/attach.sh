@@ -14,6 +14,10 @@ echo "── bind project directory"
 mkdir -p "/root/work/$PROJECT"
 cd "/root/work/$PROJECT"
 ubiqo init --project "$PROJECT"
+# Bind the exec landing dir too: `docker compose exec … bash` lands in
+# /root/work, and the hook resolves the nearest ubiqo.yaml walking UP from
+# cwd — a claude launched from /root/work must still find the project.
+(cd /root/work && ubiqo init --project "$PROJECT" >/dev/null)
 
 echo "── register the MCP connector with claude-code"
 claude mcp remove ubiqo --scope user >/dev/null 2>&1 || true
@@ -43,5 +47,5 @@ WHO="$(printf '%s\n' "$CTX" | sed -n 's/^You are ubiqo user `\([^`]*\)`.*/\1/p' 
 echo
 echo "attached to $SERVER as: ${WHO:-unknown}"
 echo
-echo "next:  claude        (sign in — use a DIFFERENT claude.ai account per workstation)"
+echo "next:  cd /root/work/$PROJECT && claude   (sign in — use a DIFFERENT claude.ai account per workstation)"
 echo "then ask:  \"What happened in $PROJECT while I was away?\""
